@@ -60,8 +60,10 @@ async def check_free_games():
             image = game.get("image")
             worth = game.get("worth", "N/A")
             end_date = game.get("end_date")
+            giveaway_type = game.get("type", "").lower()  # type field from API
 
-            if gid in seen or not is_allowed(platforms):
+            # Skip already seen, unsupported platforms, or key giveaways
+            if gid in seen or not is_allowed(platforms) or "key" in giveaway_type:
                 continue
             seen.add(gid)
             save_seen()
@@ -77,7 +79,7 @@ async def check_free_games():
                 color=0x00ff99,
                 url=url
             )
-            embed.add_field(name="Original Price", value=worth, inline=True)  # USD price from API
+            embed.add_field(name="Original Price", value=worth, inline=True)  # USD price
             embed.add_field(name="Website", value=f"[Click here]({url})", inline=True)
 
             # Footer with end date in DD/MM/YYYY format
