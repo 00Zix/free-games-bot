@@ -52,7 +52,7 @@ def get_free_games():
         print("API error:", e)
         return []
 
-# Function to generate desktop link
+# Generate desktop link for each platform
 def generate_desktop_link(platform, url):
     platform = platform.lower()
     if platform == "steam" and "steam" in url:
@@ -88,15 +88,16 @@ async def check_free_games():
             seen.add(gid)
             save_seen()
 
-            # Generate desktop links for all platforms present
             platform_list = [p.strip() for p in platforms.split(",")]
+
+            # Build Desktop App links text
             desktop_links_text = ""
             for p in platform_list:
                 link = generate_desktop_link(p, url)
                 if link:
-                    desktop_links_text += f"[{p} Desktop]({link})  "
+                    desktop_links_text += f"{p} Desktop: {link}\n"
 
-            # Create embed
+            # Create embed for main info
             embed = discord.Embed(
                 title=title,
                 description=f"**Platforms:** {', '.join(platform_list)}",
@@ -105,8 +106,6 @@ async def check_free_games():
             )
             embed.add_field(name="Original Price", value=worth, inline=True)
             embed.add_field(name="Website", value=f"[Click here]({url})", inline=True)
-            if desktop_links_text:
-                embed.add_field(name="Desktop App Links", value=desktop_links_text, inline=False)
 
             # Footer with end date
             if end_date:
@@ -120,7 +119,11 @@ async def check_free_games():
             if image:
                 embed.set_image(url=image)
 
-            await channel.send(content=role_mention, embed=embed)
+            # Send message: role ping + desktop links + embed
+            content = role_mention
+            if desktop_links_text:
+                content += f"\n{desktop_links_text}"
+            await channel.send(content=content, embed=embed)
 
         await asyncio.sleep(1800)  # 30 min interval
 
