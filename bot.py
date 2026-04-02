@@ -66,7 +66,9 @@ async def check_free_games():
             seen.add(gid)
             save_seen()
 
+            # Split and filter platforms
             platform_list = [p.strip() for p in platforms.split(",")]
+            platform_list = [p for p in platform_list if p.lower() in ALLOWED_PLATFORMS]
 
             # Create embed
             embed = discord.Embed(
@@ -75,14 +77,14 @@ async def check_free_games():
                 color=0x00ff99,
                 url=url
             )
-            embed.add_field(name="Original Price", value=worth, inline=True)
+            embed.add_field(name="Original Price", value=worth, inline=True)  # USD price from API
             embed.add_field(name="Website", value=f"[Click here]({url})", inline=True)
 
-            # Footer with end date
+            # Footer with end date in DD/MM/YYYY format
             if end_date:
                 try:
                     dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
-                    embed.set_footer(text=f"Ends on {dt.strftime('%Y-%m-%d %H:%M UTC')}")
+                    embed.set_footer(text=f"Ends on {dt.strftime('%d/%m/%Y %H:%M UTC')}")
                 except:
                     pass
 
@@ -90,6 +92,7 @@ async def check_free_games():
             if image:
                 embed.set_image(url=image)
 
+            # Send message: role ping + embed
             await channel.send(content=role_mention, embed=embed)
 
         await asyncio.sleep(1800)  # 30 min interval
