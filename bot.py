@@ -4,6 +4,7 @@ import asyncio
 import requests
 import json
 from datetime import datetime
+import re
 
 # ----- Environment Variables -----
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -12,26 +13,9 @@ role_env = os.getenv("ROLE_ID")
 ROLE_ID = int(role_env) if role_env else None  # optional role ping
 
 # ----- Supported Platforms -----
-ALLOWED_PLATFORMS = [
-    "steam",
-    "epic games store",
-    "ubisoft",
-    "origin",
-    "ea",
-    "gog"
-]
+ALLOWED_PLATFORMS = ["steam", "epic games store", "ubisoft", "origin", "ea", "gog"]
 
-# Platform icons (SVGs as clickable links)
-PLATFORM_ICONS = {
-    "steam": "https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.png",
-    "epic games store": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Epic_Games_logo.png",
-    "ubisoft": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Ubisoft_Logo_2017.png",
-    "origin": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Origin_Logo.png",
-    "ea": "https://upload.wikimedia.org/wikipedia/commons/7/70/EA_Logo.png",
-    "gog": "https://upload.wikimedia.org/wikipedia/commons/3/3b/GOG.com_logo.png"
-}
-
-# Desktop links
+# Desktop links templates
 DESKTOP_LINKS = {
     "steam": "steam://store/{app_id}",
     "epic games store": "com.epicgames.launcher://store/",
@@ -61,13 +45,23 @@ def is_allowed(platforms_str):
     return any(p in lowerp for p in ALLOWED_PLATFORMS)
 
 def get_free_games():
-    url = "https://www.gamerpower.com/api/giveaways"
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get("https://www.gamerpower.com/api/giveaways", timeout=10)
         return response.json()
     except Exception as e:
         print("API error:", e)
         return []
+
+# Function to generate desktop link
+def generate_desktop_link(platform, url):
+    platform = platform.lower()
+    if platform == "steam" and "steam" in url:
+        match = re.search(r"/app/(\d+)", url)
+        if match:
+            return DESKTOP_LINKS["steam"].format(app_id=match.group(1))
+    elif platform in DESKTOP_LINKS:
+        return DESKTOP_LINKS[platform]
+    return None
 
 async def check_free_games():
     await client.wait_until_ready()
@@ -83,57 +77,50 @@ async def check_free_games():
         for game in giveaways:
             gid = str(game.get("id"))
             title = game.get("title")
-            platforms = game.get("platforms", "").lower()
+            platforms = game.get("platforms", "")
             url = game.get("open_giveaway_url")
             image = game.get("image")
             worth = game.get("worth", "N/A")
             end_date = game.get("end_date")
 
-            # Desktop link (first matching platform)
-            desktop_link = None
-            for p in DESKTOP_LINKS.keys():
-                if p in platforms:
-                    desktop_link = DESKTOP_LINKS[p]
-                    if p == "steam" and "steam" in url:
-                        import re
-                        match = re.search(r"/app/(\d+)", url)
-                        if match:
-                            desktop_link = DESKTOP_LINKS["steam"].format(app_id=match.group(1))
-                    break
+            if gid in seen or not is_allowed(platforms):
+                continue
+            seen.add(gid)
+            save_seen()
 
-            if gid not in seen and is_allowed(platforms):
-                seen.add(gid)
-                save_seen()
+            # Generate desktop links for all platforms present
+            platform_list = [p.strip() for p in platforms.split(",")]
+            desktop_links_text = ""
+            for p in platform_list:
+                link = generate_desktop_link(p, url)
+                if link:
+                    desktop_links_text += f"[{p} Desktop]({link})  "
 
-                embed = discord.Embed(
-                    title=title,
-                    description=f"**Free on:** {platforms}",
-                    color=0x00ff99,
-                    url=url
-                )
-                embed.add_field(name="Original Price", value=worth, inline=True)
-                embed.add_field(name="Website", value=f"[Click here]({url})", inline=True)
-                if desktop_link:
-                    embed.add_field(name="Desktop App", value=f"[Launch]({desktop_link})", inline=True)
+            # Create embed
+            embed = discord.Embed(
+                title=title,
+                description=f"**Platforms:** {', '.join(platform_list)}",
+                color=0x00ff99,
+                url=url
+            )
+            embed.add_field(name="Original Price", value=worth, inline=True)
+            embed.add_field(name="Website", value=f"[Click here]({url})", inline=True)
+            if desktop_links_text:
+                embed.add_field(name="Desktop App Links", value=desktop_links_text, inline=False)
 
-                # Footer with end date
-                if end_date:
-                    try:
-                        dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
-                        embed.set_footer(text=f"Ends on {dt.strftime('%Y-%m-%d %H:%M UTC')}")
-                    except:
-                        pass
+            # Footer with end date
+            if end_date:
+                try:
+                    dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+                    embed.set_footer(text=f"Ends on {dt.strftime('%Y-%m-%d %H:%M UTC')}")
+                except:
+                    pass
 
-                # Add inline clickable platform icons
-                for p, icon_url in PLATFORM_ICONS.items():
-                    if p in platforms:
-                        embed.add_field(name="\u200b", value=f"[​]({icon_url})", inline=True)
+            # Main cover image
+            if image:
+                embed.set_image(url=image)
 
-                # Main cover image
-                if image:
-                    embed.set_image(url=image)
-
-                await channel.send(content=role_mention, embed=embed)
+            await channel.send(content=role_mention, embed=embed)
 
         await asyncio.sleep(1800)  # 30 min interval
 
