@@ -33,6 +33,18 @@ def is_allowed(platforms_str):
     lowerp = platforms_str.lower()
     return any(p in lowerp for p in ALLOWED_PLATFORMS)
 
+def is_real_game(game):
+    """Return True only for actual free games, exclude keys, in-game items, DLC, etc."""
+    title = game.get("title", "").lower()
+    gtype = game.get("type", "").lower()
+    forbidden_keywords = ["key", "dlc", "in-game", "item", "loot", "coupon", "content pack"]
+    # If any forbidden word appears in title or type, skip it
+    if any(word in title for word in forbidden_keywords):
+        return False
+    if any(word in gtype for word in forbidden_keywords):
+        return False
+    return True
+
 def get_free_games():
     try:
         response = requests.get("https://www.gamerpower.com/api/giveaways", timeout=10)
@@ -60,15 +72,14 @@ async def check_free_games():
             image = game.get("image")
             worth = game.get("worth", "N/A")
             end_date = game.get("end_date")
-            giveaway_type = game.get("type", "").lower()  # type field from API
 
-            # Skip already seen, unsupported platforms, or key giveaways
-            if gid in seen or not is_allowed(platforms) or "key" in giveaway_type:
+            # Skip if already seen, unsupported platform, or not a real game
+            if gid in seen or not is_allowed(platforms) or not is_real_game(game):
                 continue
             seen.add(gid)
             save_seen()
 
-            # Split and filter platforms
+            # Filter platforms
             platform_list = [p.strip() for p in platforms.split(",")]
             platform_list = [p for p in platform_list if p.lower() in ALLOWED_PLATFORMS]
 
@@ -79,7 +90,7 @@ async def check_free_games():
                 color=0x00ff99,
                 url=url
             )
-            embed.add_field(name="Original Price", value=worth, inline=True)  # USD price
+            embed.add_field(name="Original Price", value=worth, inline=True)
             embed.add_field(name="Website", value=f"[Click here]({url})", inline=True)
 
             # Footer with end date in DD/MM/YYYY format
@@ -90,7 +101,7 @@ async def check_free_games():
                 except:
                     pass
 
-            # Main cover image
+            # Cover image
             if image:
                 embed.set_image(url=image)
 
