@@ -9,7 +9,8 @@ from PIL import Image
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
-ROLE_ID = int(os.getenv("ROLE_ID"))
+role_env = os.getenv("ROLE_ID")
+ROLE_ID = int(role_env) if role_env else None  # Only convert to int if set
 
 ALLOWED_PLATFORMS = ["steam", "epic games store", "ubisoft", "origin", "ea", "gog"]
 
