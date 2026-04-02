@@ -4,7 +4,6 @@ import asyncio
 import requests
 import json
 from datetime import datetime
-import re
 
 # ----- Environment Variables -----
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -14,16 +13,6 @@ ROLE_ID = int(role_env) if role_env else None  # optional role ping
 
 # ----- Supported Platforms -----
 ALLOWED_PLATFORMS = ["steam", "epic games store", "ubisoft", "origin", "ea", "gog"]
-
-# Desktop links templates
-DESKTOP_LINKS = {
-    "steam": "steam://store/{app_id}",
-    "epic games store": "com.epicgames.launcher://store/",
-    "ubisoft": "uplay://open/",
-    "origin": "origin://store/",
-    "ea": "origin://store/",
-    "gog": "gog://open/"
-}
 
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
@@ -52,17 +41,6 @@ def get_free_games():
         print("API error:", e)
         return []
 
-# Generate desktop link for each platform
-def generate_desktop_link(platform, url):
-    platform = platform.lower()
-    if platform == "steam" and "steam" in url:
-        match = re.search(r"/app/(\d+)", url)
-        if match:
-            return DESKTOP_LINKS["steam"].format(app_id=match.group(1))
-    elif platform in DESKTOP_LINKS:
-        return DESKTOP_LINKS[platform]
-    return None
-
 async def check_free_games():
     await client.wait_until_ready()
     channel = client.get_channel(CHANNEL_ID)
@@ -90,14 +68,7 @@ async def check_free_games():
 
             platform_list = [p.strip() for p in platforms.split(",")]
 
-            # Build Desktop App links text
-            desktop_links_text = ""
-            for p in platform_list:
-                link = generate_desktop_link(p, url)
-                if link:
-                    desktop_links_text += f"{p} Desktop: {link}\n"
-
-            # Create embed for main info
+            # Create embed
             embed = discord.Embed(
                 title=title,
                 description=f"**Platforms:** {', '.join(platform_list)}",
@@ -119,11 +90,7 @@ async def check_free_games():
             if image:
                 embed.set_image(url=image)
 
-            # Send message: role ping + desktop links + embed
-            content = role_mention
-            if desktop_links_text:
-                content += f"\n{desktop_links_text}"
-            await channel.send(content=content, embed=embed)
+            await channel.send(content=role_mention, embed=embed)
 
         await asyncio.sleep(1800)  # 30 min interval
 
