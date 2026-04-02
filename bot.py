@@ -65,7 +65,7 @@ async def check_games():
         except Exception as e:
             print("Error:", e)
 
-        await asyncio.sleep(1800)
+        await asyncio.sleep(60)
 
 @client.event
 async def on_ready():
