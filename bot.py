@@ -23,12 +23,12 @@ ALLOWED_PLATFORMS = [
 
 # Platform icons (SVGs as clickable links)
 PLATFORM_ICONS = {
-    "steam": "https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg",
-    "epic games store": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Epic_Games_logo.svg",
-    "ubisoft": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Ubisoft_Logo_2017.svg",
-    "origin": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Origin_Logo.svg",
-    "ea": "https://upload.wikimedia.org/wikipedia/commons/7/70/EA_Logo.svg",
-    "gog": "https://upload.wikimedia.org/wikipedia/commons/3/3b/GOG.com_logo.svg"
+    "steam": "https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.png",
+    "epic games store": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Epic_Games_logo.png",
+    "ubisoft": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Ubisoft_Logo_2017.png",
+    "origin": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Origin_Logo.png",
+    "ea": "https://upload.wikimedia.org/wikipedia/commons/7/70/EA_Logo.png",
+    "gog": "https://upload.wikimedia.org/wikipedia/commons/3/3b/GOG.com_logo.png"
 }
 
 # Desktop links
