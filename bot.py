@@ -18,7 +18,7 @@ intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 SEEN_FILE = "seen_games.json"
 
-# Load seen giveaways
+# Load seen games
 try:
     with open(SEEN_FILE, "r") as f:
         seen = set(json.load(f))
@@ -33,16 +33,23 @@ def is_allowed(platforms_str):
     lowerp = platforms_str.lower()
     return any(p in lowerp for p in ALLOWED_PLATFORMS)
 
-def is_real_game(game):
-    """Return True only for actual free games, exclude keys, in-game items, DLC, etc."""
+def is_full_game(game):
+    """Return True only for actual free games (exclude keys, DLC, in-game items)."""
     title = game.get("title", "").lower()
     gtype = game.get("type", "").lower()
+    worth = game.get("worth", "").lower()
     forbidden_keywords = ["key", "dlc", "in-game", "item", "loot", "coupon", "content pack"]
-    # If any forbidden word appears in title or type, skip it
+    
+    # Exclude by title or type containing forbidden keywords
     if any(word in title for word in forbidden_keywords):
         return False
     if any(word in gtype for word in forbidden_keywords):
         return False
+
+    # Optionally, exclude things with worth like "N/A" or empty
+    if not worth or worth.lower() == "n/a":
+        return False
+    
     return True
 
 def get_free_games():
@@ -73,8 +80,8 @@ async def check_free_games():
             worth = game.get("worth", "N/A")
             end_date = game.get("end_date")
 
-            # Skip if already seen, unsupported platform, or not a real game
-            if gid in seen or not is_allowed(platforms) or not is_real_game(game):
+            # Skip if already seen, unsupported platform, or not a full game
+            if gid in seen or not is_allowed(platforms) or not is_full_game(game):
                 continue
             seen.add(gid)
             save_seen()
